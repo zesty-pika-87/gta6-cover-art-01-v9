@@ -280,10 +280,15 @@ export function renderCover(canvas, state, images) {
     placeTop = z.top < z.bottom;
   } else if (state.titlePos === 'auto') placeTop = false;
   const title = (state.title || 'SUNSET HEIST').toUpperCase();
-  const tSize = Math.round(W * (title.length > 12 ? 0.115 : 0.14));
-  const ty = placeTop ? H * 0.16 : H * 0.86;
+  let tSize = Math.round(W * (title.length > 12 ? 0.115 : 0.14));
   ctx.save();
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = `${tSize}px Anton, 'Arial Black', sans-serif`;
+  while (ctx.measureText(title).width > W * 0.94 && tSize > 20) {
+    tSize -= 4;
+    ctx.font = `${tSize}px Anton, 'Arial Black', sans-serif`;
+  }
+  const ty = placeTop ? H * 0.16 : H * 0.86;
   const grad = ctx.createLinearGradient(0, ty - tSize / 2, 0, ty + tSize / 2);
   grad.addColorStop(0, '#ffe259'); grad.addColorStop(0.5, '#ff7e2e'); grad.addColorStop(1, '#ff2e88');
   ctx.font = `${tSize}px Anton, 'Arial Black', sans-serif`;
