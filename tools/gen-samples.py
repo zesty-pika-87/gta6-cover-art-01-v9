@@ -102,9 +102,14 @@ d = ImageDraw.Draw(img)
 skyline(d, 470, (14, 8, 34), [(255, 60, 180), (60, 230, 255), (255, 210, 80)], rnd, 22)
 for sx, sy, col, txt in [(150, 180, (255, 45, 150), "NEON"), (620, 140, (40, 220, 255), "VICE"),
                          (880, 240, (255, 200, 60), "24H"), (380, 260, (120, 255, 170), "OPEN")]:
-    d.rectangle([sx - 8, sy - 8, sx + 150, sy + 42], outline=col, width=4)
+    d.rectangle([sx - 8, sy - 8, sx + 150, sy + 42], fill=(10, 6, 26), outline=col, width=4)
     d.ellipse([sx - 30, sy - 30, sx + 180, sy + 70], outline=col, width=2)
-    d.text((sx + 6, sy + 4), txt, fill=col)
+    try:
+        from PIL import ImageFont
+        fnt = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 34)
+    except Exception:
+        fnt = None
+    d.text((sx + 6, sy + 2), txt, fill=col, font=fnt)
 d.polygon([(0, 720), (430, 470), (650, 470), (1080, 720)], fill=(26, 12, 44))
 for i in range(40):
     x = 470 + i * 5
