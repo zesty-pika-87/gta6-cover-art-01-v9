@@ -3,20 +3,68 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cover Snap</title>
+<title>Cover Coast — GTA 6 Cover Art Studio</title>
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 <main class="app">
-  <section class="controls">
-    <h1>Cover Snap</h1>
-    <p>A photo and a caption, made into a square cover.</p>
-    <label>Photo <input id="photo" type="file" accept="image/*"></label>
-    <label>Caption <input id="caption" type="text" maxlength="40" value="Sunset Heist"></label>
-    <button id="export" type="button">Export PNG 1080 x 1080</button>
+  <section class="controls" aria-label="Cover editor">
+    <h1>Cover Coast</h1>
+    <p class="tag">Make a GTA-style cover in one click. Photos, grades, lettering — all offline.</p>
+
+    <h2>Presets — one click</h2>
+    <div id="presets" class="presets"></div>
+
+    <h2>Photos — click a photo, then a panel</h2>
+    <div id="tray" class="tray"></div>
+    <label class="upload">Upload your own photo <input id="upload" type="file" accept="image/*"></label>
+    <p class="hint">Selected photo goes to the next panel you click. Drag a panel to pan, scroll to zoom.</p>
+
+    <h2>Layout</h2>
+    <div id="layouts" class="chips"></div>
+
+    <h2>Colour grade</h2>
+    <div id="grades" class="chips"></div>
+    <label>Grade strength <input id="strength" type="range" min="0" max="1" step="0.05" value="0.85"> <span id="strengthVal">0.85</span></label>
+
+    <h2>Lettering</h2>
+    <label>Title <input id="title" type="text" maxlength="24" value="SUNSET HEIST"></label>
+    <label>Subtitle <input id="subtitle" type="text" maxlength="32" value="Neon Tide"></label>
+    <label>Title position
+      <select id="titlePos">
+        <option value="auto" selected>Auto — darkest area</option>
+        <option value="top">Top</option>
+        <option value="bottom">Bottom</option>
+      </select>
+    </label>
+    <label>Bottom strip <input id="strip" type="text" maxlength="60" value="ONE COAST • NO RULES • COMING SOON"></label>
+    <label>Badge <input id="badge" type="text" maxlength="24" value="ORIGINAL COVER ART"></label>
+
+    <h2>Effects</h2>
+    <label class="check"><input id="halftone" type="checkbox" checked> Halftone dots in the sky</label>
+    <label>Halftone density <input id="halftoneDensity" type="range" min="0" max="1" step="0.05" value="0.55"></label>
+    <label class="check"><input id="grain" type="checkbox" checked> Film grain</label>
+    <label class="check"><input id="vignette" type="checkbox" checked> Vignette</label>
+
+    <h2>Export</h2>
+    <div class="exports">
+      <button id="expSquare" type="button">PNG Square 1080×1080</button>
+      <button id="expPortrait" type="button">PNG Portrait 1080×1350</button>
+      <button id="expLandscape" type="button">PNG Landscape 1920×1080</button>
+      <button id="expStory" type="button">PNG Story 1080×1920</button>
+      <button id="expAll" type="button" class="primary">Export all 4 (ZIP)</button>
+    </div>
+    <div class="undo">
+      <button id="undo" type="button">Undo</button>
+      <button id="redo" type="button">Redo</button>
+      <button id="shuffle" type="button">Shuffle photos</button>
+    </div>
     <p id="status" role="status"></p>
   </section>
-  <canvas id="cover" width="1080" height="1080" aria-label="The cover"></canvas>
+  <section class="stage">
+    <canvas id="cover" width="1080" height="1080" aria-label="The cover"></canvas>
+    <p class="stage-hint">Click a panel to place the selected photo there. Drag to pan, scroll to zoom.</p>
+  </section>
 </main>
 <script type="module" src="./src/main.js"></script>
 </body>
