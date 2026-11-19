@@ -6,6 +6,8 @@ import { zipStore } from './zip.js';
 
 const canvas = document.getElementById('cover');
 const statusEl = document.getElementById('status');
+window.__errors = [];
+window.addEventListener('error', (e) => window.__errors.push(String(e.message || e.error)));
 const state = defaultState();
 const images = new Map();
 let selectedPhoto = 'boulevard';

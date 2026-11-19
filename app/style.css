@@ -33,4 +33,7 @@ body.shot-cover .controls, body.shot-cover .stage-hint { display: none; }
 body.shot-cover .app { padding: 0; max-width: none; }
 body.shot-cover .stage { flex: 1; }
 body.shot-cover #cover { max-width: none; border-radius: 0; }
-body.shot-grid .controls, body.shot-story .controls { display: none; }
+body.shot-grid .controls, body.shot-story .controls, body.shot-grid .stage-hint, body.shot-story .stage-hint { display: none; }
+body.shot-grid .app, body.shot-story .app { padding: 0; max-width: none; }
+body.shot-grid .stage, body.shot-story .stage { flex: 1; }
+body.shot-grid #cover, body.shot-story #cover { max-width: none; border-radius: 0; }

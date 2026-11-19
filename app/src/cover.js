@@ -192,7 +192,7 @@ function zoneLuminance(imgCv) {
   return { top: top / (24 * 8), bottom: bot / (24 * 8) };
 }
 
-function drawPanel(ctx, img, rect, pan, state, index, images) {
+function drawPanel(ctx, img, rect, pan, state, index, images, hideChip) {
   const { x, y, w, h, rot } = rect;
   if (w <= 0 || h <= 0) return;
   ctx.save();
@@ -211,29 +211,41 @@ function drawPanel(ctx, img, rect, pan, state, index, images) {
   if (state.halftone) {
     const rnd = mulberry32(9000 + index * 77);
     const gap = Math.max(5, Math.round(w * 0.028 * (1.4 - state.halftoneDensity)));
-    ctx.fillStyle = 'rgba(20,8,30,0.20)';
-    for (let yy = gap / 2; yy < h * 0.38; yy += gap) {
+    ctx.fillStyle = 'rgba(20,8,30,0.16)';
+    for (let yy = gap / 2; yy < h * 0.32; yy += gap) {
       for (let xx = gap / 2; xx < w; xx += gap) {
         const r = gap * 0.16 * (0.6 + rnd() * 0.8) * state.halftoneDensity * 2;
         ctx.beginPath(); ctx.arc(xx, yy, Math.max(0.6, r), 0, Math.PI * 2); ctx.fill();
       }
     }
   }
-  // chip caption, bottom-left of the panel
+  // chip caption, bottom-left of the panel (skipped on the hero panel when
+  // the title sits at the bottom — the title would cover it anyway)
   const photoId = state.photos[index % state.photos.length];
   const photo = PHOTOS.find(p => p.id === photoId);
   const cap = state.chips[index] ?? photo?.caption ?? '';
-  if (cap) {
-    ctx.font = `bold ${Math.max(11, Math.round(w * 0.028))}px Arial, sans-serif`;
-    const tw = ctx.measureText(cap).width;
+  if (cap && !hideChip) {
     const padX = Math.round(w * 0.02), padY = Math.round(h * 0.035);
-    const bw = Math.min(tw + padX * 2, w * 0.94), bh = Math.max(18, Math.round(h * 0.075));
+    const maxW = w * 0.94 - padX * 2;
+    let fs = Math.max(11, Math.round(w * 0.028));
+    ctx.font = `bold ${fs}px Arial, sans-serif`;
+    while (ctx.measureText(cap).width > maxW && fs > 9) {
+      fs -= 1;
+      ctx.font = `bold ${fs}px Arial, sans-serif`;
+    }
+    let text = cap;
+    if (ctx.measureText(text).width > maxW) {
+      while (text.length > 4 && ctx.measureText(text + '…').width > maxW) text = text.slice(0, text.lastIndexOf(' ') > 4 ? text.lastIndexOf(' ') : text.length - 1);
+      text += '…';
+    }
+    const tw = ctx.measureText(text).width;
+    const bw = tw + padX * 2, bh = Math.max(18, Math.round(h * 0.075));
     ctx.fillStyle = 'rgba(8,4,16,0.82)';
     ctx.beginPath();
     const bx = padX, by = h - bh - padY;
     ctx.roundRect(bx, by, bw, bh, bh / 2.4); ctx.fill();
     ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(cap.slice(0, Math.floor(cap.length * (bw - padX * 2) / Math.max(1, tw))), bx + padX, by + bh / 2 + 1);
+    ctx.fillText(text, bx + padX, by + bh / 2 + 1);
   }
   ctx.restore();
 }
@@ -260,25 +272,31 @@ export function renderCover(canvas, state, images) {
   const W = canvas.width, H = canvas.height;
   // cream frame
   ctx.fillStyle = '#f6ead2'; ctx.fillRect(0, 0, W, H);
-  const rects = panelRects(state.layout, W, H);
+  // The bottom strip is reserved first: panels end above it, so no chip or
+  // panel bottom ever hides under the strip.
+  const stripH = state.layout === 'strip' ? Math.round(H * 0.13) : Math.round(H * 0.055);
+  const contentH = H - stripH;
+  const rects = panelRects(state.layout, W, contentH);
   const heroImg = images.get(state.photos[0]);
+  // --- lettering placement: dark-zone aware (decided before panels draw,
+  // so the hero chip can be hidden when the title sits at the bottom) ---
+  let placeTop = state.titlePos === 'top';
+  if (state.titlePos === 'auto' && heroImg) {
+    const z = zoneLuminance(gradedImage(heroImg, state.grade, state.strength));
+    placeTop = z.top < z.bottom;
+  } else if (state.titlePos === 'auto') placeTop = false;
   rects.forEach((rect, i) => {
     const pid = state.photos[i % state.photos.length];
     const img = images.get(pid);
     if (!img) return;
-    drawPanel(ctx, img, rect, state.pans[pid], state, i, images);
+    drawPanel(ctx, img, rect, state.pans[pid], state, i, images, i === 0 && !placeTop);
     // white gutter border per panel
     ctx.save();
     ctx.strokeStyle = '#f6ead2'; ctx.lineWidth = Math.max(3, Math.round(W * 0.006));
     ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
     ctx.restore();
   });
-  // --- lettering: dark-zone aware placement ---
-  let placeTop = state.titlePos === 'top';
-  if (state.titlePos === 'auto' && heroImg) {
-    const z = zoneLuminance(gradedImage(heroImg, state.grade, state.strength));
-    placeTop = z.top < z.bottom;
-  } else if (state.titlePos === 'auto') placeTop = false;
+  // --- lettering (placement decided above, before the panels) ---
   const title = (state.title || 'SUNSET HEIST').toUpperCase();
   let tSize = Math.round(W * (title.length > 12 ? 0.115 : 0.14));
   ctx.save();
@@ -288,7 +306,7 @@ export function renderCover(canvas, state, images) {
     tSize -= 4;
     ctx.font = `${tSize}px Anton, 'Arial Black', sans-serif`;
   }
-  const ty = placeTop ? H * 0.16 : H * 0.86;
+  const ty = placeTop ? contentH * 0.16 : contentH * 0.87;
   const grad = ctx.createLinearGradient(0, ty - tSize / 2, 0, ty + tSize / 2);
   grad.addColorStop(0, '#ffe259'); grad.addColorStop(0.5, '#ff7e2e'); grad.addColorStop(1, '#ff2e88');
   ctx.font = `${tSize}px Anton, 'Arial Black', sans-serif`;
@@ -311,19 +329,28 @@ export function renderCover(canvas, state, images) {
   ctx.restore();
   // starburst badge, top-right
   drawStarburst(ctx, W * 0.88, H * 0.10, Math.round(W * 0.075), '#ffd23e', state.badge || 'ORIGINAL COVER ART');
-  // star meter, bottom-left above the strip
-  const stripH = state.layout === 'strip' ? Math.round(H * 0.13) : Math.round(H * 0.055);
-  const sy0 = H - stripH - Math.round(H * 0.045);
+  // star meter + edition line, top-left on a dark pill (never collides with
+  // the title, which sits at the bottom in the default placement)
+  const smY = Math.round(H * 0.045);
   ctx.save();
   ctx.font = `${Math.round(W * 0.042)}px Arial, sans-serif`;
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  const estText = 'EST. 2026  •  VOL. 01';
+  ctx.font = `bold ${Math.round(W * 0.026)}px Arial, sans-serif`;
+  const estW = ctx.measureText(estText).width;
+  const starsW = W * 0.05 * 5;
+  const pillW = W * 0.045 + starsW + W * 0.01 + estW + W * 0.03;
+  const pillH = Math.round(H * 0.055);
+  ctx.fillStyle = 'rgba(8,4,16,0.72)';
+  ctx.beginPath(); ctx.roundRect(W * 0.02, smY - pillH / 2, pillW, pillH, pillH / 2); ctx.fill();
   let sx = W * 0.045;
+  ctx.font = `${Math.round(W * 0.042)}px Arial, sans-serif`;
   for (let i = 0; i < 5; i++) {
     ctx.fillStyle = i < state.starMeter ? '#ffd23e' : 'rgba(255,255,255,0.35)';
-    ctx.fillText('★', sx, sy0); sx += W * 0.05;
+    ctx.fillText('★', sx, smY); sx += W * 0.05;
   }
   ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.round(W * 0.026)}px Arial, sans-serif`;
-  ctx.fillText('EST. 2026  •  VOL. 01  •  COLLECTOR’S EDITION', sx + W * 0.01, sy0);
+  ctx.fillText(estText, sx + W * 0.01, smY);
   ctx.restore();
   // bottom strip tagline
   ctx.save();

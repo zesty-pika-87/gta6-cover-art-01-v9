@@ -31,10 +31,12 @@ export function runShot(shot, query, state, images, draw, syncControls) {
     document.body.classList.add('shot-story');
     state.layout = 'story'; state.grade = 'palm';
     state.title = 'LEONIDA HEAT'; state.subtitle = 'Boardwalk nights';
+    state.strip = 'EVERY SUMMER HAS A STORY';
     const cv = document.getElementById('cover');
     cv.width = 1080; cv.height = 1920;
   }
   syncControls();
   draw();
-  requestAnimationFrame(() => requestAnimationFrame(() => { window.__shotReady = true; }));
+  const markReady = () => requestAnimationFrame(() => requestAnimationFrame(() => { window.__shotReady = true; }));
+  if (document.fonts?.ready) document.fonts.ready.then(markReady); else markReady();
 }
